@@ -1,0 +1,580 @@
+{
+  "name": "automate publish wordpress post",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "minutes"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        0,
+        130
+      ],
+      "id": "3ffac690-dac3-46f8-a188-4eca74dc26a6",
+      "name": "Schedule Trigger",
+      "notesInFlow": false
+    },
+    {
+      "parameters": {
+        "resource": "fileFolder",
+        "returnAll": true,
+        "filter": {
+          "folderId": {
+            "__rl": true,
+            "value": "1DX_j3bDezZ4upDhb0-efYJn2Mszu6n5y",
+            "mode": "list",
+            "cachedResultName": "จดหมายข่าว",
+            "cachedResultUrl": "https://drive.google.com/drive/folders/1DX_j3bDezZ4upDhb0-efYJn2Mszu6n5y"
+          }
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        220,
+        130
+      ],
+      "id": "51feaf28-caef-41ea-97d8-941e394facc1",
+      "name": "Search files and folders",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "nYcbKiegP64iYhPy",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {
+          "binaryPropertyName": ""
+        }
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        660,
+        5
+      ],
+      "id": "ae4b5768-67ad-4c13-a900-8926c7b02e45",
+      "name": "Download file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "nYcbKiegP64iYhPy",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=อ่านข้อความจากภาพนี้แล้วสรุปผลลัพธ์ให้อยู่ในรูปแบบ JSON โดยมีโครงสร้างดังนี้:\n\n- title (string): หัวข้อข่าวที่แท้จริง ไม่รวมคำว่า \"จดหมายข่าว\" หรือ \"ประชาสัมพันธ์\"\n- date (string): วันที่ตามปฏิทินไทยตามที่ปรากฏในเอกสาร\n- details (string): เนื้อหาข่าวทั้งหมด\n- date_publish (datetime): วันเวลาเผยแพร่ในรูปแบบ ISO 8601 เช่น 2025-06-23T00:00:00Z\n\nหากพบว่ามีหลายย่อหน้า ให้รวมเป็นข้อความเดียวใน `details` โดยคงความครบถ้วนของเนื้อหาไว้\n\nเนื้อหา: {{ $json[\"content\"] }}\n",
+        "hasOutputParser": true,
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        880,
+        155
+      ],
+      "id": "903ad494-0edb-433a-8014-07692ce1ea83",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.5-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        908,
+        375
+      ],
+      "id": "81cf48f2-2017-4b79-bc97-cc216b13874a",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "u7uRe4Ua0KsoQjkW",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"title\": \"กิจกรรมวันไหว้ครู\",\n  \"date\": \"26 กุมภาพันธ์ พ.ศ. 2568\",\n  \"details\": \"โรงเรียนโพนงามพิทยานุกูลจัดกิจกรรมวันไหว้ครู....\",\n  \"date_publish\": \"2025-06-25T10:00:00\" \n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.3,
+      "position": [
+        1028,
+        375
+      ],
+      "id": "6f579982-2bae-4311-b488-fe5057e49581",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "title": "={{ $json.title }}",
+        "additionalFields": {
+          "content": "={{ $json.content }}",
+          "status": "publish",
+          "categories": [
+            5
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.wordpress",
+      "typeVersion": 1,
+      "position": [
+        1696,
+        -220
+      ],
+      "id": "6d12c4a6-c3c6-43bc-b55f-c342d5eca2b0",
+      "name": "Create a post",
+      "alwaysOutputData": true,
+      "credentials": {
+        "wordpressApi": {
+          "id": "SLcGGvLoRGgH0Fw3",
+          "name": "Wordpress account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1916,
+        -45
+      ],
+      "id": "4d62a08b-eee9-46ba-b2ba-d4641bd6e837",
+      "name": "Merge",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "jsCode": "const post = items[0].json;\nconst extracted = items[1].json;\nconst img = items[2].json;\n\n// สร้าง Date object จาก date_publish (ที่มี Z)\nconst utcDate = new Date(extracted.output.date_publish);\n\n// แปลงเป็น ISO string แล้วตัด Z ทิ้ง เพื่อให้เป็น local time ที่ WordPress จะตีความตาม timezone ที่ตั้งไว้\nconst localISO = utcDate.toISOString().slice(0, 19); // YYYY-MM-DDTHH:MM:SS\n\nreturn [\n  {\n    json: {\n      id: post.id,\n      date_publish: localISO,\n      img_id:img.id\n    }\n  }\n];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2136,
+        -45
+      ],
+      "id": "0a52741c-3ad3-4c85-b4f6-a195b7df5db0",
+      "name": "Refactor JSON"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [items[0]];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        440,
+        130
+      ],
+      "id": "02c057d2-e360-467a-b5a8-3aa01812aa2e",
+      "name": "Return List 0"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://www.ppks.ac.th/wp-json/wp/v2/media",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "wordpressApi",
+        "sendHeaders": true,
+        "specifyHeaders": "json",
+        "jsonHeaders": "={\n  \"Content-Disposition\": \"attachment; filename={{ $json.id }}.jpg\",\n  \"Content-Type\": \"image/jpeg\"\n}",
+        "sendBody": true,
+        "contentType": "binaryData",
+        "inputDataFieldName": "data",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        958,
+        -145
+      ],
+      "id": "e37b0b5b-1921-4cca-81ee-df65f215ee81",
+      "name": "HTTP Request1",
+      "credentials": {
+        "wordpressApi": {
+          "id": "SLcGGvLoRGgH0Fw3",
+          "name": "Wordpress account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        1256,
+        -220
+      ],
+      "id": "fd8bffba-688f-4189-a4f9-931f8ba15b07",
+      "name": "Merge1"
+    },
+    {
+      "parameters": {
+        "jsCode": "// สมมติ items[1].json.output คือข้อมูล content\nconst contentItem = items[1].json.output;\n\n// สมมติ items[0].json.source_url คือ URL รูปภาพ\nconst imageUrl = items[0].json.source_url;\n\n// หรือถ้าจะใส่ทั้ง title, date แล้วตามด้วยรูป แล้วรายละเอียด\nconst fullContent = `\n<h2>${contentItem.title}</h2>\n<p><em>${contentItem.date}</em></p>\n${`<img src=\"${imageUrl}\" alt=\"ภาพกิจกรรม\" style=\"max-width:100%;height:auto;margin-bottom:1em;\">`}\n<p>${contentItem.details}</p>\n`;\n\n// สร้าง object สำหรับส่งไป WordPress\nreturn [{\n  json: {\n    title: contentItem.title,\n    date: contentItem.date,\n    content: fullContent,    // ใส่ content ที่มีรูปภาพแทรก\n    date_publish: contentItem.date_publish\n  }\n}];\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1476,
+        -220
+      ],
+      "id": "baa84c60-8f16-4f3f-b31a-c10252b31827",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "numberInputs": 3
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        2576,
+        55
+      ],
+      "id": "7193dd75-eecf-415f-950e-103c434dde5a",
+      "name": "Merge2"
+    },
+    {
+      "parameters": {
+        "operation": "deleteFile",
+        "fileId": {
+          "__rl": true,
+          "value": "={{ $json.id }}",
+          "mode": "id"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        3016,
+        55
+      ],
+      "id": "5e7a6d2a-a9db-4576-ba10-00f8a5ad3901",
+      "name": "Delete a file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "nYcbKiegP64iYhPy",
+          "name": "Google Drive account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://www.ppks.ac.th/wp-json/wp/v2/posts/{{ $json.id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "wordpressApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"date\": \"{{ $json.date_publish }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2356,
+        -95
+      ],
+      "id": "c101329d-5979-47a1-a87f-b0bda47b6ffe",
+      "name": "Edit Publishdate",
+      "credentials": {
+        "wordpressApi": {
+          "id": "SLcGGvLoRGgH0Fw3",
+          "name": "Wordpress account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "PATCH",
+        "url": "=https://www.ppks.ac.th/wp-json/wp/v2/posts/{{ $json.id }}",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "wordpressApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"featured_media\": {{ $json.img_id }}\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2356,
+        205
+      ],
+      "id": "0fb12543-2d71-4ca1-9edf-2fc9c0d5b3c4",
+      "name": "Edit Feature",
+      "credentials": {
+        "wordpressApi": {
+          "id": "SLcGGvLoRGgH0Fw3",
+          "name": "Wordpress account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// กรอง items เฉพาะที่มี id และ name และไม่มี title/content\nconst result = items.filter(item =>\n  item.json.id &&\n  item.json.name &&\n  !item.json.title &&\n  !item.json.content\n);\n\n// ส่งออกเฉพาะที่ต้องการ\nreturn result;\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2796,
+        55
+      ],
+      "id": "e63ccc4c-4797-480d-925d-d3354900dfd3",
+      "name": "Filter Drive ID"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Search files and folders",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Search files and folders": {
+      "main": [
+        [
+          {
+            "node": "Return List 0",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download file": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          },
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a post": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Refactor JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Refactor JSON": {
+      "main": [
+        [
+          {
+            "node": "Edit Publishdate",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Edit Feature",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Return List 0": {
+      "main": [
+        [
+          {
+            "node": "Download file",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Merge1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Merge1": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Create a post",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge2": {
+      "main": [
+        [
+          {
+            "node": "Filter Drive ID",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Publishdate": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Feature": {
+      "main": [
+        [
+          {
+            "node": "Merge2",
+            "type": "main",
+            "index": 2
+          }
+        ]
+      ]
+    },
+    "Filter Drive ID": {
+      "main": [
+        [
+          {
+            "node": "Delete a file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "3c52b32b-ec66-4026-894a-56fc35c6558c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "b5a8341299ce5446388d847cde1c353abac0a7ac555c7e3614144f9105ce6728"
+  },
+  "id": "vucouQFbrVuVyGUx",
+  "tags": []
+}
